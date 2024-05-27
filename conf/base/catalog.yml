@@ -1,0 +1,23 @@
+raw_data:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/raw_data.csv
+
+test_data:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/test_data.csv
+
+preprocessed_data:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/preprocessed_data.csv
+
+trained_model:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/trained_model.pkl
+
+evaluation_results:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/evaluation_results.pkl
+
+tonal_exams:
+  type: pandas.CSVDataSet
+  filepath: C:/Users/Sahade/prosthetics/data/01_raw/tonal_exams.csv
