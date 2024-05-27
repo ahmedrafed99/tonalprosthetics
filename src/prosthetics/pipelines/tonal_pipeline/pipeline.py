@@ -1,47 +1,10 @@
 from kedro.pipeline import Pipeline, node
 import pandas as pd
-
+import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
-
-def preprocess_data(data: pd.DataFrame) -> pd.DataFrame:
-    # Supprimer les lignes avec des valeurs manquantes
-    data.dropna(inplace=True)
-    
-    # Normaliser les colonnes numériques
-    numeric_cols = data.select_dtypes(include=['float64', 'int64']).columns
-    scaler = StandardScaler()
-    data[numeric_cols] = scaler.fit_transform(data[numeric_cols])
-    
-    # Encoder les données catégoriques si nécessaire
-    # data = pd.get_dummies(data)
-    
-    return data
-
-
-def train_model(data: pd.DataFrame, model: tf.keras.Model, epochs=10):
-    # Prétraitement des données si nécessaire
-    # data = preprocess_data(data)
-
-    # Séparation des données en entrées (X) et sorties (y)
-    X_train = data.drop(columns=[
-        'before_exam_125_Hz', 'before_exam_250_Hz', 'before_exam_500_Hz',
-        'before_exam_1000_Hz', 'before_exam_2000_Hz', 'before_exam_4000_Hz', 'before_exam_8000_Hz',
-        'after_exam_125_Hz', 'after_exam_250_Hz', 'after_exam_500_Hz',
-        'after_exam_1000_Hz', 'after_exam_2000_Hz', 'after_exam_4000_Hz', 'after_exam_8000_Hz'
-    ])
-
-    y_train = data[[
-        'before_exam_125_Hz', 'before_exam_250_Hz', 'before_exam_500_Hz',
-        'before_exam_1000_Hz', 'before_exam_2000_Hz', 'before_exam_4000_Hz', 'before_exam_8000_Hz',
-        'after_exam_125_Hz', 'after_exam_250_Hz', 'after_exam_500_Hz',
-        'after_exam_1000_Hz', 'after_exam_2000_Hz', 'after_exam_4000_Hz', 'after_exam_8000_Hz'
-    ]]
-
-    # Entraînement du modèle
-    model.fit(X_train, y_train, epochs=epochs)
-
-    return model
-
+from sklearn.model_selection import train_test_split
+from kedro.extras.datasets.pickle import PickleDataSet
+from nodes import preprocess_data, split_data, create_model, train_model, evaluate_model
 
 def create_pipeline(**kwargs) -> Pipeline:
     return Pipeline(
@@ -53,10 +16,35 @@ def create_pipeline(**kwargs) -> Pipeline:
                 name="preprocess_data_node"
             ),
             node(
+                func=split_data,
+                inputs=dict(data="preprocessed_data", 
+                            test_size="params:test_size", 
+                            random_state="params:random_state"),
+                outputs=["X_train", "X_test", "y_train", "y_test"],
+                name="split_data_node"
+            ),
+            node(
+                func=create_model,
+                inputs=dict(units="params:units",
+                            activation="params:activation",
+                            l2_value="params:l2_value",
+                            dropout_rate="params:dropout_rate",
+                            learning_rate="params:learning_rate"),
+                outputs="model",
+                name="create_model_node"
+            ),
+            node(
                 func=train_model,
-                inputs="preprocessed_data",
-                outputs=None,
+                inputs=["X_train", "y_train", "model", "params:epochs"],
+                outputs="trained_model",
                 name="train_model_node"
+            ),
+            node(
+                func=evaluate_model,
+                inputs=["X_test", "y_test", "trained_model"],
+                outputs="evaluation_results",
+                name="evaluate_model_node"
+            
             ),
         ]
     )

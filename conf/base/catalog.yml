@@ -1,23 +1,35 @@
-raw_data:
+ #kedro_folder\kedro_project\conf\base\catalog.yml
+ # Here you can define all your data sets by using simple YAML syntax.
+ #
+ # Documentation for this file format can be found in "The Data Catalog"
+ # Link: https://docs.kedro.org/en/stable/data/data_catalog.html
+ raw_daily_data:
+  type: PartitionedDataSet 
+  path: data/01_raw # path to the location of partitions 
+  dataset: pandas.CSVDataSet
+  layer: raw
+ shaped_datas:
   type: pandas.CSVDataSet
-  filepath: data/01_raw/raw_data.csv
-
-test_data:
+  filepath: data/02_intermediate/merged_data.csv
+  layer: intermediate
+ train_data:
   type: pandas.CSVDataSet
-  filepath: data/01_raw/test_data.csv
-
-preprocessed_data:
+  filepath: data/05_model_input/train.csv
+  layer: model_input
+ train_labels:
   type: pandas.CSVDataSet
-  filepath: data/02_intermediate/preprocessed_data.csv
-
-trained_model:
-  type: pickle.PickleDataSet
-  filepath: data/06_models/trained_model.pkl
-
-evaluation_results:
-  type: pickle.PickleDataSet
-  filepath: data/07_model_output/evaluation_results.pkl
-
-tonal_exams:
+  filepath: data/05_model_input/train_labels.csv
+  layer: model_input
+ test_data:
   type: pandas.CSVDataSet
-  filepath: C:/Users/Sahade/prosthetics/data/01_raw/tonal_exams.csv
+  filepath: data/05_model_input/test.csv
+  layer: model_input
+ test_labels:
+  type: pandas.CSVDataSet
+  filepath: data/05_model_input/test_labels.csv
+  layer: model_input
+ ml_model:
+  type: tensorflow.TensorFlowModelDataset  #pickle.PickleDataSet
+  filepath: data/06_models/20230427_model.h5
+  save_args:
+    overwrite: true

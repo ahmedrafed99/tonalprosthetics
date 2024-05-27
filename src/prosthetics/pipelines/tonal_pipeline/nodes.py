@@ -6,11 +6,39 @@ from typing import Dict, Any
 import pandas as pd
 
 def preprocess_data(data: pd.DataFrame) -> pd.DataFrame:
-    # Prétraitement des données (par exemple, gestion des valeurs manquantes, normalisation)
+    data.dropna(inplace=True)
+    numeric_cols = data.select_dtypes(include=['float64', 'int64']).columns
+    scaler = StandardScaler()
+    data[numeric_cols] = scaler.fit_transform(data[numeric_cols])
     return data
+def split_data(data: pd.DataFrame, test_size: float, random_state: int):
+    X = data.drop(columns=[
+        'before_exam_125_Hz', 'before_exam_250_Hz', 'before_exam_500_Hz',
+        'before_exam_1000_Hz', 'before_exam_2000_Hz', 'before_exam_4000_Hz', 'before_exam_8000_Hz',
+        'after_exam_125_Hz', 'after_exam_250_Hz', 'after_exam_500_Hz',
+        'after_exam_1000_Hz', 'after_exam_2000_Hz', 'after_exam_4000_Hz', 'after_exam_8000_Hz'
+    ])
+    y = data[[
+        'before_exam_125_Hz', 'before_exam_250_Hz', 'before_exam_500_Hz',
+        'before_exam_1000_Hz', 'before_exam_2000_Hz', 'before_exam_4000_Hz', 'before_exam_8000_Hz',
+        'after_exam_125_Hz', 'after_exam_250_Hz', 'after_exam_500_Hz',
+        'after_exam_1000_Hz', 'after_exam_2000_Hz', 'after_exam_4000_Hz', 'after_exam_8000_Hz'
+    ]]
+    return train_test_split(X, y, test_size=test_size, random_state=random_state)
 
-def train_model(data: pd.DataFrame, parameters: Dict[str, Any]) -> Any:
-    # Entraînement du modèle
+def create_model(units, activation, l2_value, dropout_rate, learning_rate):
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(units, activation=activation, kernel_regularizer=tf.keras.regularizers.l2(l2_value)),
+        tf.keras.layers.Dropout(dropout_rate),
+        tf.keras.layers.Dense(14, activation='linear')
+    ])
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
+                  loss='mean_squared_error',
+                  metrics=['mse'])
+    return model
+
+def train_model(X_train: pd.DataFrame, y_train: pd.DataFrame, model: tf.keras.Model, epochs=10):
+    model.fit(X_train, y_train, epochs=epochs)
     from tensorflow.keras import layers, models, regularizers
     
     input_shape = (data.shape[1], 1)
